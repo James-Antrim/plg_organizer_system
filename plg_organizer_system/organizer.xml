@@ -5,18 +5,18 @@
     <author>James Antrim</author>
     <authorUrl>www.thm.de</authorUrl>
     <authorEmail>james.antrim@nm.thm.de</authorEmail>
-	<creationDate>June 2020</creationDate>
-	<copyright>TH Mittelhessen 2020</copyright>
-	<license>GNU GPL v.2</license>
-	<version>3.0.1</version>
-	<files>
-		<filename plugin="organizer">organizer.php</filename>
+    <creationDate>June 2020</creationDate>
+    <copyright>TH Mittelhessen 2020</copyright>
+    <license>GNU GPL v.2</license>
+    <version>3.0.1</version>
+    <files>
+        <filename plugin="organizer">organizer.php</filename>
         <folder>language</folder>
-	</files>
-	<languages folder="language">
-		<language tag="en-GB">en-GB/en-GB.plg_system_organizer.sys.ini</language>
-		<language tag="de-DE">de-DE/de-DE.plg_system_organizer.sys.ini</language>
-	</languages>
+    </files>
+    <languages folder="language">
+        <language tag="en-GB">en-GB/en-GB.plg_system_organizer.sys.ini</language>
+        <language tag="de-DE">de-DE/de-DE.plg_system_organizer.sys.ini</language>
+    </languages>
     <dependencies>
         <dependency before="true" type="component" minversion="3.*">com_organizer</dependency>
     </dependencies>
