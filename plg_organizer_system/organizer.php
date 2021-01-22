@@ -61,17 +61,14 @@ class PlgSystemOrganizer extends JPlugin
 	/**
 	 * Method simulating the effect of a chron job by performing tasks on super user login.
 	 *
-	 * @param   array  $user     Holds the user data.
-	 * @param   array  $options  Array holding options (remember, autoregister, group).
-	 *
 	 * @return  bool  True on success.
 	 */
-	public function onUserAfterLogin($user, $options = [])
+	public function onUserAfterLogin(): bool
 	{
 		$user = Factory::getUser();
 		if ($user->authorise('core.admin'))
 		{
-			$this->purgeAttendance();
+			return $this->purgeAttendance();
 		}
 
 		return true;
