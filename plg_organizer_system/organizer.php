@@ -10,10 +10,13 @@
 
 require_once JPATH_ROOT . '/components/com_organizer/autoloader.php';
 
+use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Form\Form;
 use Joomla\CMS\Form\FormHelper;
+use Joomla\CMS\Uri\Uri;
 use Organizer\Adapters\Database;
+use Organizer\Helpers;
 
 defined('_JEXEC') or die;
 
@@ -22,6 +25,8 @@ defined('_JEXEC') or die;
  */
 class PlgSystemOrganizer extends JPlugin
 {
+	private static $called = false;
+
 	/**
 	 * Adds additional fields to the user editing form
 	 *
@@ -72,6 +77,91 @@ class PlgSystemOrganizer extends JPlugin
 		}
 
 		return true;
+	}
+
+	/**
+	 * Ensures the users are logged in and redirected appropriately after being saved.
+	 *
+	 * @return void
+	 */
+	public function onUserAfterSave()
+	{
+		if (!$task = Helpers\Input::getTask() or $task !== 'register' or self::$called)
+		{
+			return;
+		}
+
+		$app         = Helpers\OrganizerHelper::getApplication();
+		$form        = Helpers\Input::getFormItems();
+		$credentials = ['username' => $form->get('username'), 'password' => $form->get('password1')];
+		// Separate and parse the query to get the return URL
+		$referrer = Helpers\Input::getInput()->server->get('HTTP_REFERER', '', 'raw');
+		$query    = parse_url($referrer, PHP_URL_QUERY);
+		parse_str($referrer, $query);
+		$return = array_key_exists('return', $query) ? base64_decode($query['return']) : '';
+
+		if ($app->login($credentials) and $return)
+		{
+			$app->redirect($return);
+		}
+	}
+
+	/**
+	 * Ensures that users with existing credentials use those during the account creation process.
+	 *
+	 * @param   array  $existing  the exising user entry
+	 * @param   bool   $newFlag   a redundant flag
+	 * @param   array  $user      the data entred by the user in the form
+	 *
+	 * @return bool
+	 * @noinspection PhpUnusedParameterInspection
+	 */
+	public function onUserBeforeSave(array $existing, bool $newFlag, array $user): bool
+	{
+		if (!$task = Helpers\Input::getTask() or $task !== 'register' or self::$called)
+		{
+			return true;
+		}
+
+		if (!$filter = ComponentHelper::getParams('com_organizer')->get('emailFilter'))
+		{
+			return true;
+		}
+
+		if (strpos($user['email'], $filter) === false)
+		{
+			return true;
+		}
+
+		self::$called = true;
+
+		$app         = Helpers\OrganizerHelper::getApplication();
+		$form        = Helpers\Input::getFormItems();
+		$credentials = ['username' => $form->get('username'), 'password' => $form->get('password1')];
+
+		// Separate and parse the query to get the return URL
+		$referrer = Helpers\Input::getInput()->server->get('HTTP_REFERER', '', 'raw');
+		$query    = parse_url($referrer, PHP_URL_QUERY);
+		parse_str($referrer, $query);
+		$return = array_key_exists('return', $query) ? base64_decode($query['return']) : Uri::base();
+
+		// An attempt was made to register using official credentials.
+		if ($app->login($credentials))
+		{
+			$message = sprintf(Helpers\Languages::_('ORGANIZER_REGISTER_INTERNAL_SUCCESS'), $filter);
+			Helpers\OrganizerHelper::message($message, 'success');
+			$app->redirect($return);
+
+			return true;
+		}
+
+		// Clear the standard error messages from the login routine.
+		$app->getMessageQueue(true);
+		$message = sprintf(Helpers\Languages::_('ORGANIZER_REGISTER_INTERNAL_FAIL'), $filter);
+		Helpers\OrganizerHelper::message($message, 'warning');
+		$app->redirect($return);
+
+		return false;
 	}
 
 	/**
