@@ -17,6 +17,7 @@ use Joomla\CMS\Form\FormHelper;
 use Joomla\CMS\Uri\Uri;
 use Organizer\Adapters\Database;
 use Organizer\Helpers;
+use Organizer\Helpers\Input;
 
 defined('_JEXEC') or die;
 
@@ -26,6 +27,91 @@ defined('_JEXEC') or die;
 class PlgSystemOrganizer extends JPlugin
 {
 	private static $called = false;
+
+	/**
+	 * Migrates users' subscription links.
+	 */
+	public function onAfterInitialise()
+	{
+		if (Input::getCMD('option') === 'com_thm_organizer' and Input::getCMD('view') === 'schedule_export')
+		{
+			$auth     = Input::getString('auth');
+			$format   = Input::getCMD('format');
+			$groupID  = Input::getInt('poolIDs');
+			$layout   = Input::getCMD('documentFormat');
+			/** @noinspection PhpVariableNamingConventionInspection */
+			$my       = Input::getBool('myschedule');
+			$personID = Input::getInt('teacherIDs');
+			$roomID   = Input::getInt('roomIDs');
+			$url      = Uri::base() . '?option=com_organizer&view=';
+			$userName = Input::getCMD('username');
+
+			if ($groupID or $my or $personID or $roomID)
+			{
+				// The means to authenticate is missing, preemptively handled to make further processing uniform
+				if (($my or $personID) and !($auth and $userName))
+				{
+					Helpers\OrganizerHelper::error(403);
+				}
+
+				$validMap = ['pdf' => ['a3', 'a4'], 'xls' => ['si'], 'ics' => []];
+
+				if (!in_array($format, array_keys($validMap)) or ($layout and !in_array($layout, $validMap[$format])))
+				{
+					Helpers\OrganizerHelper::error(400);
+				}
+
+				$url .= "instances&format=$format";
+
+				if ($format === 'pdf')
+				{
+					$layout = (empty($layout) or $layout === 'a4') ? 'GridA4' : 'GridA3';
+				}
+				elseif ($format === 'xls')
+				{
+					$layout = 'Instances';
+				}
+
+				$url .= $layout ? "&layout=$layout" : '';
+
+				if ($groupID)
+				{
+					$url .=  "&groupID=$groupID";
+				}
+
+				if ($my)
+				{
+					$url .=  "&my=1";
+				}
+
+				if ($personID)
+				{
+					$url .=  "&personID=$personID";
+				}
+
+				if ($roomID)
+				{
+					$url .=  "&roomID=$roomID";
+				}
+
+				if ($userName)
+				{
+					$url .=  "&username=$userName";
+				}
+
+				if ($auth)
+				{
+					$url .=  "&auth=$auth";
+				}
+			}
+			else
+			{
+				$url .= 'export';
+			}
+
+			Helpers\OrganizerHelper::getApplication()->redirect($url, 301);
+		}
+	}
 
 	/**
 	 * Adds additional fields to the user editing form
@@ -61,7 +147,6 @@ class PlgSystemOrganizer extends JPlugin
 
 		return true;
 	}
-
 
 	/**
 	 * Method simulating the effect of a chron job by performing tasks on super user login.
