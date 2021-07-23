@@ -17,7 +17,6 @@ use Joomla\CMS\Form\FormHelper;
 use Joomla\CMS\Uri\Uri;
 use Organizer\Adapters\Database;
 use Organizer\Helpers;
-use Organizer\Helpers\Input;
 
 defined('_JEXEC') or die;
 
@@ -30,21 +29,24 @@ class PlgSystemOrganizer extends JPlugin
 
 	/**
 	 * Migrates users' subscription links.
+	 * @throws Exception
 	 */
 	public function onAfterInitialise()
 	{
-		if (Input::getCMD('option') === 'com_thm_organizer' and Input::getCMD('view') === 'schedule_export')
+		$input = Factory::getApplication()->input;
+
+		if ($input->getCMD('option') === 'com_thm_organizer' and $input->getCMD('view') === 'schedule_export')
 		{
-			$auth     = Input::getString('auth');
-			$format   = Input::getCMD('format');
-			$groupID  = Input::getInt('poolIDs');
-			$layout   = Input::getCMD('documentFormat');
+			$auth     = $input->getString('auth');
+			$format   = $input->getCMD('format');
+			$groupID  = $input->getInt('poolIDs');
+			$layout   = $input->getCMD('documentFormat');
 			/** @noinspection PhpVariableNamingConventionInspection */
-			$my       = Input::getBool('myschedule');
-			$personID = Input::getInt('teacherIDs');
-			$roomID   = Input::getInt('roomIDs');
+			$my       = $input->getBool('myschedule');
+			$personID = $input->getInt('teacherIDs');
+			$roomID   = $input->getInt('roomIDs');
 			$url      = Uri::base() . '?option=com_organizer&view=';
-			$userName = Input::getCMD('username');
+			$userName = $input->getCMD('username');
 
 			if ($groupID or $my or $personID or $roomID)
 			{
